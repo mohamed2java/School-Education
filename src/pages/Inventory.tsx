@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Search, Plus, Package, AlertTriangle, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Search, Plus, Package, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,9 +25,13 @@ const categories: { value: InventoryCategory | 'all'; label: string }[] = [
 ];
 
 export default function Inventory() {
-    const { items, transactions, receiveStock, issueStock, addItem } = useInventoryStore();
+    const { items, isLoading, fetchItems, transactions, receiveStock, issueStock, addItem } = useInventoryStore();
     const { students } = useStudentsStore();
     const { user } = useAuthStore();
+
+    useEffect(() => {
+        fetchItems();
+    }, [fetchItems]);
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -193,7 +197,17 @@ export default function Inventory() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.map((item) => {
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={6} className="py-20 text-center">
+                                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                                            <Loader2 className="size-10 animate-spin text-primary" />
+                                            <p className="font-bold">جاري تحميل بيانات المخزن...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filtered.map((item) => {
                                 const isLow = item.quantity <= item.minQuantity;
                                 return (
                                     <tr key={item.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
@@ -216,8 +230,9 @@ export default function Inventory() {
                                         </td>
                                     </tr>
                                 );
-                            })}
-                        </tbody>
+                            })
+                        )}
+                    </tbody>
                     </table>
                     {filtered.length === 0 && (
                         <div className="text-center py-12 text-muted-foreground">

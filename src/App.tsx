@@ -13,6 +13,7 @@ const Inventory = lazy(() => import('@/pages/Inventory'));
 const BusManagement = lazy(() => import('@/pages/BusManagement'));
 const Reports = lazy(() => import('@/pages/Reports'));
 const Users = lazy(() => import('@/pages/Users'));
+const Profile = lazy(() => import('@/pages/Profile'));
 
 function LoadingFallback() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="/bus" element={<BusManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

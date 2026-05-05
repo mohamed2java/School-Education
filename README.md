@@ -7,19 +7,41 @@ The only requirement is having Node.js & npm installed - [install with nvm](http
 
 Follow these steps:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## التشغيل والتطوير (Local Development)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 1. تشغيل قاعدة البيانات (PostgreSQL 16)
+تأكد من وجود Docker ثم قم بتشغيل الأمر التالي:
+```bash
+docker compose up -d
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 2. تنصيب المكتبات
+```bash
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 3. تشغيل وضع التطوير
+```bash
 npm run dev
 ```
+
+---
+
+## النشر (Deployment)
+
+### النشر على GitHub Pages
+المشروع معد مسبقاً للنشر على GitHub Pages. بمجرد الانتهاء من التعديلات، استخدم هذا الأمر:
+```bash
+npm run deploy
+```
+
+---
+
+## التقنيات المستخدمة
+- **Frontend:** React + Vite + TypeScript
+- **Styling:** Tailwind CSS + Shadcn UI
+- **Database:** PostgreSQL 16 (via Docker)
+- **Deployment:** GitHub Pages
 
 **Edit a file directly in GitHub**
 
@@ -34,13 +56,3 @@ npm run dev
 - Select the "Codespaces" tab.
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS

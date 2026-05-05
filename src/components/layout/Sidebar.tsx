@@ -7,6 +7,7 @@ import {
   Bus,
   BarChart3,
   UserCog,
+  User,
   LogOut,
   ChevronRight,
   ChevronLeft,
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'الباصات', path: '/bus', icon: Bus, roles: ['system_admin', 'school_director', 'bus_supervisor'] },
   { label: 'التقارير', path: '/reports', icon: BarChart3, roles: ['system_admin', 'school_director', 'head_accountant'] },
   { label: 'المستخدمين', path: '/users', icon: UserCog, roles: ['system_admin'] },
+  { label: 'الملف الشخصي', path: '/profile', icon: User, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant', 'warehouse_keeper', 'bus_supervisor'] },
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -89,15 +91,23 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-sidebar-accent/50">
-            <div className="size-9 rounded-full bg-sidebar-primary flex items-center justify-center text-white font-bold text-sm">
-              {user?.name?.charAt(0)}
+          <Link 
+            to="/profile" 
+            onClick={onClose}
+            className="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors group"
+          >
+            <div className="size-9 rounded-full bg-sidebar-primary flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user.name} className="size-full object-cover" />
+              ) : (
+                user?.name?.charAt(0)
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.name}</p>
+              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{user?.name}</p>
               <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
             </div>
-          </div>
+          </Link>
           <button
             onClick={logout}
             className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-red-500/10 hover:text-red-400 transition-colors"

@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id              String    @id @default(uuid())
+  nationalId      String    @unique
+  name            String
+  stage           String
+  grade           String
+  className       String
+  guardianName    String
+  guardianPhone   String
+  address         String?
+  enrollmentDate  String
+  status          String    @default("active")
+  totalFees       Float     @default(0)
+  paidAmount      Float     @default(0)
+  busRouteId      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  payments        Payment[]
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  studentId     String
+  studentName   String
+  amount        Float
+  type          String
+  method        String
+  date          String
+  receiptNumber String   @unique
+  collectedBy   String
+  student       Student  @relation(fields: [studentId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model InventoryItem {
+  id           String   @id @default(uuid())
+  name         String
+  category     String
+  quantity     Int      @default(0)
+  minQuantity  Int      @default(5)
+  unit         String   @default("قطعة")
+  unitPrice    Float    @default(0)
+  grade        String?
+  description  String?
+  lastUpdated  String
+}
+
+model BusRoute {
+  id           String   @id @default(uuid())
+  name         String
+  driverName   String
+  driverPhone  String
+  busNumber    String
+  capacity     Int
+  monthlyFee   Float
+  annualFee    Float
+  stops        String[] @default([])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String
+  avatar    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

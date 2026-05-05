@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { UserCog, Plus, Shield, Check, X } from 'lucide-react';
+import { UserCog, Plus, Shield, Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockUsers } from '@/constants/mockData';
+import { useUsersStore } from '@/stores/usersStore';
 import { roleLabels } from '@/lib/utils';
 import type { UserRole } from '@/types';
 
@@ -30,26 +30,40 @@ const roleBadgeColors: Record<string, string> = {
 };
 
 export default function Users() {
-    const [users, setUsers] = useState(mockUsers);
+    const { users, isLoading, fetchUsers, addUser, updateUser, toggleUserActive } = useUsersStore();
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [form, setForm] = useState({ name: '', email: '', role: 'accountant' as UserRole, password: '123456' });
+    const [editForm, setEditForm] = useState({ name: '', email: '', role: 'accountant' as UserRole });
+    const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-    const handleAdd = (e: React.FormEvent) => {
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
+
+    const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newUser = {
-            id: `u${Date.now()}`,
-            ...form,
-            active: true,
-        };
-        setUsers([...users, newUser]);
-        toast.success(`تم إضافة المستخدم ${form.name}`);
+        await addUser(form);
         setDialogOpen(false);
         setForm({ name: '', email: '', role: 'accountant', password: '123456' });
     };
 
-    const toggleActive = (userId: string) => {
-        setUsers(users.map((u) => u.id === userId ? { ...u, active: !u.active } : u));
-        toast.success('تم تحديث حالة المستخدم');
+    const handleEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingUserId) return;
+        await updateUser(editingUserId, editForm);
+        setEditDialogOpen(false);
+        setEditingUserId(null);
+    };
+
+    const openEdit = (user: any) => {
+        setEditingUserId(user.id);
+        setEditForm({ name: user.name, email: user.email, role: user.role });
+        setEditDialogOpen(true);
+    };
+
+    const toggleActive = async (userId: string, currentStatus: boolean) => {
+        await toggleUserActive(userId, currentStatus);
     };
 
     return (
@@ -97,6 +111,39 @@ export default function Users() {
                             <div className="flex justify-end gap-3">
                                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
                                 <Button type="submit">إضافة</Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle className="font-[Noto_Kufi_Arabic]">تعديل بيانات المستخدم</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleEdit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>الاسم</Label>
+                                <Input required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>البريد الإلكتروني</Label>
+                                <Input type="email" required value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>الدور</Label>
+                                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v as UserRole })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {roleOptions.map((r) => (
+                                            <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>إلغاء</Button>
+                                <Button type="submit">حفظ التعديلات</Button>
                             </div>
                         </form>
                     </DialogContent>
@@ -154,39 +201,55 @@ export default function Users() {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map((u) => (
-                            <tr key={u.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                                <td className="p-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                                            {u.name.charAt(0)}
-                                        </div>
-                                        <span className="font-medium">{u.name}</span>
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={5} className="py-20 text-center">
+                                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                                        <Loader2 className="size-10 animate-spin text-primary" />
+                                        <p className="font-bold">جاري تحميل المستخدمين...</p>
                                     </div>
                                 </td>
-                                <td className="p-3 text-muted-foreground" dir="ltr">{u.email}</td>
-                                <td className="p-3">
-                                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${roleBadgeColors[u.role]}`}>
-                                        {roleLabels[u.role]}
-                                    </span>
-                                </td>
-                                <td className="p-3">
-                                    <Badge variant={u.active ? 'default' : 'secondary'} className={u.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : ''}>
-                                        {u.active ? 'نشط' : 'معطل'}
-                                    </Badge>
-                                </td>
-                                <td className="p-3">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-xs"
-                                        onClick={() => toggleActive(u.id)}
-                                    >
-                                        {u.active ? 'تعطيل' : 'تفعيل'}
-                                    </Button>
-                                </td>
                             </tr>
-                        ))}
+                        ) : (
+                            users.map((u) => (
+                                <tr key={u.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                                    <td className="p-3">
+                                        <button 
+                                            onClick={() => openEdit(u)}
+                                            className="flex items-center gap-3 hover:text-primary transition-colors text-right w-full"
+                                        >
+                                            <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                                {u.name.charAt(0)}
+                                            </div>
+                                            <span className="font-medium underline-offset-4 hover:underline">{u.name}</span>
+                                        </button>
+                                    </td>
+                                    <td className="p-3 text-muted-foreground" dir="ltr">{u.email}</td>
+                                    <td className="p-3">
+                                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${roleBadgeColors[u.role]}`}>
+                                            {roleLabels[u.role]}
+                                        </span>
+                                    </td>
+                                    <td className="p-3">
+                                        <Badge variant={u.active ? 'default' : 'secondary'} className={u.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100' : ''}>
+                                            {u.active ? 'نشط' : 'معطل'}
+                                        </Badge>
+                                    </td>
+                                    <td className="p-3">
+                                        <button
+                                            className={`text-xs font-bold px-3 py-1 rounded-md transition-colors ${
+                                                u.active 
+                                                ? 'bg-red-50 text-red-600 hover:bg-red-100' 
+                                                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                            }`}
+                                            onClick={() => toggleActive(u.id, u.active)}
+                                        >
+                                            {u.active ? 'تعطيل' : 'تفعيل'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>

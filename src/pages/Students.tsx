@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Filter, Eye, GraduationCap } from 'lucide-react';
+import { Search, Plus, Filter, Eye, GraduationCap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +27,14 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Students() {
-    const { students, addStudent } = useStudentsStore();
+    const { students, isLoading, fetchStudents, addStudent } = useStudentsStore();
     const [search, setSearch] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
     const [dialogOpen, setDialogOpen] = useState(false);
+
+    useEffect(() => {
+        fetchStudents();
+    }, [fetchStudents]);
 
     const [form, setForm] = useState({
         nationalId: '', name: '', stage: 'primary' as Stage, grade: '', className: '',
@@ -165,7 +169,17 @@ export default function Students() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filtered.map((s) => {
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={7} className="py-20 text-center">
+                                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                                        <Loader2 className="size-10 animate-spin text-primary" />
+                                        <p className="font-bold">جاري تحميل بيانات الطلاب...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (
+                            filtered.map((s) => {
                             const pct = Math.round((s.paidAmount / s.totalFees) * 100);
                             return (
                                 <tr key={s.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
@@ -211,8 +225,9 @@ export default function Students() {
                                     </td>
                                 </tr>
                             );
-                        })}
-                    </tbody>
+                        })
+                    )}
+                </tbody>
                 </table>
                 {filtered.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">

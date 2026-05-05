@@ -6,9 +6,11 @@ import { generateId } from '@/lib/utils';
 
 interface PaymentsState {
   payments: Payment[];
-  installmentPlans: InstallmentPlan[];
-  addPayment: (payment: Omit<Payment, 'id'>) => string;
+  isLoading: boolean;
+  fetchPayments: () => Promise<void>;
+  addPayment: (payment: Omit<Payment, 'id'>) => Promise<string>;
   getStudentPayments: (studentId: string) => Payment[];
+  installmentPlans: InstallmentPlan[];
   addInstallmentPlan: (plan: Omit<InstallmentPlan, 'id'>) => void;
   getStudentInstallments: (studentId: string) => InstallmentPlan[];
   payInstallment: (planId: string, installmentId: string) => void;
@@ -17,14 +19,34 @@ interface PaymentsState {
 export const usePaymentsStore = create<PaymentsState>()(
   persist(
     (set, get) => ({
-      payments: mockPayments,
+      payments: [],
+      isLoading: false,
       installmentPlans: mockInstallments,
-      addPayment: (payment) => {
-        const id = generateId();
-        set((state) => ({
-          payments: [{ ...payment, id }, ...state.payments],
-        }));
-        return id;
+      fetchPayments: async () => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch('http://127.0.0.1:4000/api/payments');
+          const data = await response.json();
+          set({ payments: data, isLoading: false });
+        } catch (error) {
+          console.error('Fetch payments error:', error);
+          set({ isLoading: false });
+        }
+      },
+      addPayment: async (payment) => {
+        try {
+          const response = await fetch('http://127.0.0.1:4000/api/payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payment),
+          });
+          const newPayment = await response.json();
+          set((state) => ({ payments: [newPayment, ...state.payments] }));
+          return newPayment.id;
+        } catch (error) {
+          console.error('Add payment error:', error);
+          return '';
+        }
       },
       getStudentPayments: (studentId) => get().payments.filter((p) => p.studentId === studentId),
       addInstallmentPlan: (plan) => set((state) => ({

@@ -6,6 +6,8 @@ import { generateId } from '@/lib/utils';
 
 interface InventoryState {
   items: InventoryItem[];
+  isLoading: boolean;
+  fetchItems: () => Promise<void>;
   transactions: InventoryTransaction[];
   addItem: (item: Omit<InventoryItem, 'id'>) => void;
   updateItem: (id: string, data: Partial<InventoryItem>) => void;
@@ -17,8 +19,20 @@ interface InventoryState {
 export const useInventoryStore = create<InventoryState>()(
   persist(
     (set, get) => ({
-      items: mockInventory,
+      items: [],
+      isLoading: false,
       transactions: mockInventoryTransactions,
+      fetchItems: async () => {
+        set({ isLoading: true });
+        try {
+          const response = await fetch('http://127.0.0.1:4000/api/inventory');
+          const data = await response.json();
+          set({ items: data, isLoading: false });
+        } catch (error) {
+          console.error('Fetch inventory error:', error);
+          set({ isLoading: false });
+        }
+      },
       addItem: (item) => set((state) => ({
         items: [...state.items, { ...item, id: generateId() }],
       })),

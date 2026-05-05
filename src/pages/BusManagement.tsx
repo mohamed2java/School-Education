@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Bus, MapPin, Phone, Users, Plus, X } from 'lucide-react';
+import { Bus, MapPin, Phone, Users, Plus, X, Loader2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,11 +13,19 @@ import { formatCurrency } from '@/lib/utils';
 import StatCard from '@/components/features/StatCard';
 
 export default function BusManagement() {
-    const { routes, subscriptions, addSubscription, cancelSubscription, getRouteSubscribers } = useBusStore();
+    const { routes, isLoading, fetchRoutes, addRoute, updateRoute, subscriptions, addSubscription, cancelSubscription, getRouteSubscribers } = useBusStore();
     const { students } = useStudentsStore();
+
+    useEffect(() => {
+        fetchRoutes();
+    }, [fetchRoutes]);
     const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
     const [subDialogOpen, setSubDialogOpen] = useState(false);
+    const [routeDialogOpen, setRouteDialogOpen] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [subForm, setSubForm] = useState({ studentId: '', routeId: '', type: 'annual' as 'monthly' | 'annual' });
+    const [routeForm, setRouteForm] = useState({ name: '', driverName: '', driverPhone: '', busNumber: '', capacity: 20, monthlyFee: 0, annualFee: 0, stops: [] as string[] });
+    const [editingRouteId, setEditingRouteId] = useState<string | null>(null);
 
     const activeSubscriptions = subscriptions.filter((s) => s.status === 'active');
     const totalBusRevenue = activeSubscriptions.reduce((sum, s) => {
@@ -27,6 +35,39 @@ export default function BusManagement() {
 
     const selectedRouteData = routes.find((r) => r.id === selectedRoute);
     const routeSubscribers = selectedRoute ? getRouteSubscribers(selectedRoute) : [];
+
+    const handleAddRoute = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await addRoute(routeForm);
+        toast.success(`تم إنشاء خط ${routeForm.name} بنجاح`);
+        setRouteDialogOpen(false);
+        setRouteForm({ name: '', driverName: '', driverPhone: '', busNumber: '', capacity: 20, monthlyFee: 0, annualFee: 0, stops: [] });
+    };
+
+    const handleEditRoute = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRouteId) return;
+        await updateRoute(editingRouteId, routeForm);
+        toast.success('تم تحديث بيانات الخط بنجاح');
+        setEditDialogOpen(false);
+        setEditingRouteId(null);
+        setRouteForm({ name: '', driverName: '', driverPhone: '', busNumber: '', capacity: 20, monthlyFee: 0, annualFee: 0, stops: [] });
+    };
+
+    const openEditDialog = (route: any) => {
+        setEditingRouteId(route.id);
+        setRouteForm({
+            name: route.name,
+            driverName: route.driverName,
+            driverPhone: route.driverPhone,
+            busNumber: route.busNumber,
+            capacity: route.capacity,
+            monthlyFee: route.monthlyFee,
+            annualFee: route.annualFee,
+            stops: route.stops || [],
+        });
+        setEditDialogOpen(true);
+    };
 
     const handleAddSub = (e: React.FormEvent) => {
         e.preventDefault();
@@ -61,7 +102,58 @@ export default function BusManagement() {
                 <StatCard title="إيرادات الباصات" value={formatCurrency(totalBusRevenue)} icon={Bus} colorClass="emerald" />
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                <Dialog open={routeDialogOpen} onOpenChange={setRouteDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline"><Plus className="size-4 ml-2" />تعريف خط جديد</Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader><DialogTitle className="font-[Noto_Kufi_Arabic]">إضافة خط باص جديد</DialogTitle></DialogHeader>
+                        <form onSubmit={handleAddRoute} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label>اسم الخط</Label><Input required value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} placeholder="مثال: خط المعادي" /></div>
+                                <div className="space-y-2"><Label>رقم الباص</Label><Input required value={routeForm.busNumber} onChange={(e) => setRouteForm({ ...routeForm, busNumber: e.target.value })} placeholder="مثال: ب ا ص 123" /></div>
+                                <div className="space-y-2"><Label>اسم السائق</Label><Input required value={routeForm.driverName} onChange={(e) => setRouteForm({ ...routeForm, driverName: e.target.value })} /></div>
+                                <div className="space-y-2"><Label>هاتف السائق</Label><Input required value={routeForm.driverPhone} onChange={(e) => setRouteForm({ ...routeForm, driverPhone: e.target.value })} /></div>
+                                <div className="space-y-2"><Label>السعة (عدد الركاب)</Label><Input type="number" required min={1} value={routeForm.capacity} onChange={(e) => setRouteForm({ ...routeForm, capacity: Number(e.target.value) })} /></div>
+                                <div className="space-y-2"><Label>الرسوم الشهرية</Label><Input type="number" required min={0} value={routeForm.monthlyFee} onChange={(e) => setRouteForm({ ...routeForm, monthlyFee: Number(e.target.value) })} /></div>
+                                <div className="space-y-2"><Label>الرسوم السنوية</Label><Input type="number" required min={0} value={routeForm.annualFee} onChange={(e) => setRouteForm({ ...routeForm, annualFee: Number(e.target.value) })} /></div>
+                                <div className="space-y-2">
+                                    <Label>المحطات (مفصولة بفاصلة)</Label>
+                                    <Input value={routeForm.stops.join(', ')} onChange={(e) => setRouteForm({ ...routeForm, stops: e.target.value.split(',').map(s => s.trim()) })} placeholder="المعادي, الدقي, ..." />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setRouteDialogOpen(false)}>إلغاء</Button><Button type="submit">حفظ الخط</Button></div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+                
+                {/* Edit Route Dialog */}
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader><DialogTitle className="font-[Noto_Kufi_Arabic]">تعديل بيانات الخط</DialogTitle></DialogHeader>
+                        <form onSubmit={handleEditRoute} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2"><Label>اسم الخط</Label><Input required value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} /></div>
+                                <div className="space-y-2"><Label>رقم الباص</Label><Input required value={routeForm.busNumber} onChange={(e) => setRouteForm({ ...routeForm, busNumber: e.target.value })} /></div>
+                                <div className="space-y-2"><Label>اسم السائق</Label><Input required value={routeForm.driverName} onChange={(e) => setRouteForm({ ...routeForm, driverName: e.target.value })} /></div>
+                                <div className="space-y-2"><Label>هاتف السائق</Label><Input required value={routeForm.driverPhone} onChange={(e) => setRouteForm({ ...routeForm, driverPhone: e.target.value })} /></div>
+                                <div className="space-y-2"><Label>السعة (عدد الركاب)</Label><Input type="number" required min={1} value={routeForm.capacity} onChange={(e) => setRouteForm({ ...routeForm, capacity: Number(e.target.value) })} /></div>
+                                <div className="space-y-2"><Label>الرسوم الشهرية</Label><Input type="number" required min={0} value={routeForm.monthlyFee} onChange={(e) => setRouteForm({ ...routeForm, monthlyFee: Number(e.target.value) })} /></div>
+                                <div className="space-y-2"><Label>الرسوم السنوية</Label><Input type="number" required min={0} value={routeForm.annualFee} onChange={(e) => setRouteForm({ ...routeForm, annualFee: Number(e.target.value) })} /></div>
+                                <div className="space-y-2">
+                                    <Label>المحطات (مفصولة بفاصلة)</Label>
+                                    <Input value={routeForm.stops.join(', ')} onChange={(e) => setRouteForm({ ...routeForm, stops: e.target.value.split(',').map(s => s.trim()) })} />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>إلغاء</Button>
+                                <Button type="submit">حفظ التعديلات</Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
                 <Dialog open={subDialogOpen} onOpenChange={setSubDialogOpen}>
                     <DialogTrigger asChild>
                         <Button><Plus className="size-4 ml-2" />اشتراك جديد</Button>
@@ -109,7 +201,13 @@ export default function BusManagement() {
                 <div className="lg:col-span-2 space-y-4">
                     <h3 className="text-base font-bold font-[Noto_Kufi_Arabic]">خطوط الباصات</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {routes.map((route) => {
+                        {isLoading ? (
+                            <div className="col-span-2 py-20 flex flex-col items-center gap-3 text-muted-foreground">
+                                <Loader2 className="size-10 animate-spin text-primary" />
+                                <p className="font-bold">جاري تحميل خطوط الباصات...</p>
+                            </div>
+                        ) : (
+                            routes.map((route) => {
                             const subs = getRouteSubscribers(route.id);
                             const occupancy = Math.round((subs.length / route.capacity) * 100);
                             return (
@@ -128,6 +226,17 @@ export default function BusManagement() {
                                                 <p className="text-xs text-muted-foreground">{route.busNumber}</p>
                                             </div>
                                         </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="size-8 -mt-2 -mr-2"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openEditDialog(route);
+                                            }}
+                                        >
+                                            <Edit className="size-4 text-muted-foreground" />
+                                        </Button>
                                     </div>
                                     <div className="space-y-2 text-xs">
                                         <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -143,7 +252,8 @@ export default function BusManagement() {
                                     </div>
                                 </button>
                             );
-                        })}
+                        })
+                    )}
                     </div>
                 </div>
 

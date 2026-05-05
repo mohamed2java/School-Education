@@ -17,19 +17,17 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      const success = login(email, password);
-      if (success) {
-        toast.success('تم تسجيل الدخول بنجاح');
-        navigate('/dashboard', { replace: true });
-      } else {
-        toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
-      }
-      setLoading(false);
-    }, 1000);
+    const success = await login(email, password);
+    if (success) {
+      toast.success('تم تسجيل الدخول بنجاح');
+      navigate('/dashboard', { replace: true });
+    } else {
+      toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+    }
+    setLoading(false);
   };
 
   return (
