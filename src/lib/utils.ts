@@ -5,13 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | undefined | null): string {
+  if (amount === undefined || amount === null) return '0 ج.م.';
+  const value = typeof amount === 'number' ? amount : 0;
+  if (isNaN(value)) return '0 ج.م.';
+  
   return new Intl.NumberFormat('ar-EG', {
     style: 'currency',
     currency: 'EGP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(value);
 }
 
 export function formatDate(dateStr: string): string {
@@ -73,9 +77,34 @@ export const stageLabels: Record<string, string> = {
   secondary: 'المرحلة الثانوية',
 };
 
+export const trackLabels: Record<string, string> = {
+  local: 'ناشونال (محلي)',
+  international: 'انترناشونال (دولي)',
+};
+
 export const statusLabels: Record<string, string> = {
-  active: 'نشط',
+  applied: 'متقدم جديد',
+  under_testing: 'تحت الاختبار',
+  failed: 'لم يجتز الاختبار',
+  fee_setup: 'إعداد الرسوم',
+  pending_approval: 'بانتظار الاعتماد',
+  admitted: 'مقبول / طالب نشط',
   inactive: 'غير نشط',
   graduated: 'متخرج',
   transferred: 'منقول',
+};
+
+export const gradeOptions: Record<string, string[]> = {
+  kg: ['KG1', 'KG2'],
+  primary: ['الصف الأول الابتدائي', 'الصف الثاني الابتدائي', 'الصف الثالث الابتدائي', 'الصف الرابع الابتدائي', 'الصف الخامس الابتدائي', 'الصف السادس الابتدائي'],
+  preparatory: ['الصف الأول الإعدادي', 'الصف الثاني الإعدادي', 'الصف الثالث الإعدادي'],
+  secondary: ['الصف الأول الثانوي', 'الصف الثاني الثانوي', 'الصف الثالث الثانوي'],
+};
+
+export const academicYears = ['2023-2024', '2024-2025', '2025-2026', '2026-2027'];
+export const currentAcademicYear = '2024-2025';
+
+export const discountLimits: Record<string, { maxPercentage: number, maxAmount: number }> = {
+  accountant: { maxPercentage: 2, maxAmount: 1000 },
+  head_accountant: { maxPercentage: 5, maxAmount: 5000 },
 };

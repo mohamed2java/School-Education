@@ -12,6 +12,9 @@ import {
   ChevronRight,
   ChevronLeft,
   X,
+  UserCheck,
+  Settings,
+  ShieldAlert,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/authStore';
@@ -32,11 +35,15 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'لوحة التحكم', path: '/dashboard', icon: LayoutDashboard, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant', 'warehouse_keeper', 'bus_supervisor'] },
-  { label: 'الطلاب', path: '/students', icon: GraduationCap, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant'] },
+  { label: 'إدارة الطلاب', path: '/students', icon: GraduationCap, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant'] },
   { label: 'المدفوعات والخزينة', path: '/payments', icon: Banknote, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant'] },
   { label: 'المخزن', path: '/inventory', icon: Package, roles: ['system_admin', 'school_director', 'warehouse_keeper'] },
   { label: 'الباصات', path: '/bus', icon: Bus, roles: ['system_admin', 'school_director', 'bus_supervisor'] },
   { label: 'التقارير', path: '/reports', icon: BarChart3, roles: ['system_admin', 'school_director', 'head_accountant'] },
+  { label: 'القبول والتسجيل', path: '/admission', icon: UserCheck, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant'] },
+  { label: 'إعدادات الرسوم', path: '/stage-fees', icon: Settings, roles: ['system_admin', 'school_director'] },
+  { label: 'إعدادات صلاحيات الخصم', path: '/discount-settings', icon: UserCog, roles: ['system_admin', 'school_director'] },
+  { label: 'اعتمادات الخصومات', path: '/discount-approvals', icon: ShieldAlert, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant'] },
   { label: 'المستخدمين', path: '/users', icon: UserCog, roles: ['system_admin'] },
   { label: 'الملف الشخصي', path: '/profile', icon: User, roles: ['system_admin', 'school_director', 'head_accountant', 'accountant', 'warehouse_keeper', 'bus_supervisor'] },
 ];

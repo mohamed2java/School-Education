@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -27,9 +27,14 @@ const instStatusConfig = {
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
-    const { students, addPaymentToStudent } = useStudentsStore();
-    const { payments, addPayment, installmentPlans, payInstallment, addInstallmentPlan } = usePaymentsStore();
+    const { students, fetchStudents, updateStudent } = useStudentsStore();
+    const { payments, fetchPayments, addPayment, installmentPlans, payInstallment, addInstallmentPlan } = usePaymentsStore();
     const { subscriptions, routes } = useBusStore();
+
+    useEffect(() => {
+        fetchStudents();
+        fetchPayments();
+    }, [fetchStudents, fetchPayments]);
 
     const student = students.find((s) => s.id === id);
     const studentPayments = useMemo(() => payments.filter((p) => p.studentId === id), [payments, id]);
@@ -51,32 +56,23 @@ export default function StudentDetail() {
     }
 
     const remaining = student.totalFees - student.paidAmount;
-    const paidPct = Math.round((student.paidAmount / student.totalFees) * 100);
+    const totalDebt = student.yearlyFinance?.reduce((sum, yf) => sum + (yf.totalFees - yf.paidAmount), 0) || remaining;
+    const paidPct = student.totalFees > 0 ? Math.round((student.paidAmount / student.totalFees) * 100) : 0;
 
-    const handlePay = (e: React.FormEvent) => {
+    const handlePay = async (e: React.FormEvent) => {
         e.preventDefault();
-        const receipt = `REC-${Date.now().toString().slice(-6)}`;
-        const date = new Date().toISOString().split('T')[0];
-        const newPayment = {
-            studentId: student.id,
-            studentName: student.name,
-            amount: payForm.amount,
-            type: payForm.type,
-            method: payForm.method,
-            date,
-            receiptNumber: receipt,
-            collectedBy: 'المستخدم الحالي',
-            notes: payForm.notes || undefined,
-        };
-        addPayment(newPayment);
-        addPaymentToStudent(student.id, payForm.amount);
-        toast.success(`تم تسجيل دفعة بقيمة ${formatCurrency(payForm.amount)}`);
-        printPaymentReceipt(
-            { id: '', ...newPayment },
-            { grade: `${student.grade} / ${student.className}`, guardianName: student.guardianName }
-        );
-        setPayDialogOpen(false);
-        setPayForm({ amount: 0, type: 'tuition', method: 'cash', notes: '' });
+        try {
+            await updateStudent(student.id, { 
+                pendingPaymentAmount: payForm.amount,
+                pendingPaymentType: payForm.type,
+                paymentRequestStatus: 'pending'
+            });
+            toast.success('تم إرسال طلب التحصيل إلى الخزينة بنجاح');
+            setPayDialogOpen(false);
+            setPayForm({ amount: 0, type: 'tuition', method: 'cash', notes: '' });
+        } catch (error) {
+            toast.error('حدث خطأ أثناء إرسال الطلب');
+        }
     };
 
     const handleCreatePlan = (e: React.FormEvent) => {
@@ -156,9 +152,9 @@ export default function StudentDetail() {
                 <div className="rounded-lg border bg-card p-6 space-y-4">
                     <h3 className="font-bold font-[Noto_Kufi_Arabic]">الملخص المالي</h3>
                     <div className="space-y-3">
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">إجمالي الرسوم</span><span className="font-bold tabular-nums">{formatCurrency(student.totalFees)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">المدفوع</span><span className="font-bold text-emerald-600 tabular-nums">{formatCurrency(student.paidAmount)}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">المتبقي</span><span className="font-bold text-red-600 tabular-nums">{formatCurrency(remaining)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">إجمالي الرسوم (السنة الحالية)</span><span className="font-bold tabular-nums">{formatCurrency(student.totalFees)}</span></div>
+                        <div className="flex justify-between text-sm"><span className="text-muted-foreground">المدفوع (السنة الحالية)</span><span className="font-bold text-emerald-600 tabular-nums">{formatCurrency(student.paidAmount)}</span></div>
+                        <div className="flex justify-between text-sm border-t pt-2 mt-2"><span className="text-muted-foreground font-bold">إجمالي المديونية المستحقة</span><span className="font-bold text-red-600 tabular-nums">{formatCurrency(totalDebt)}</span></div>
                         <div>
                             <div className="flex justify-between text-xs mb-1"><span>{paidPct}%</span></div>
                             <div className="h-3 rounded-full bg-muted overflow-hidden">
@@ -176,8 +172,8 @@ export default function StudentDetail() {
                                 <form onSubmit={handlePay} className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label>المبلغ</Label>
-                                            <Input type="number" required min={1} value={payForm.amount || ''} onChange={(e) => setPayForm({ ...payForm, amount: Number(e.target.value) })} />
+                                            <Label>المبلغ المطلوب تحصيله</Label>
+                                            <Input type="number" required min={1} max={totalDebt} value={payForm.amount || ''} onChange={(e) => setPayForm({ ...payForm, amount: Number(e.target.value) })} />
                                         </div>
                                         <div className="space-y-2">
                                             <Label>النوع</Label>
@@ -202,7 +198,7 @@ export default function StudentDetail() {
                                         <Label>ملاحظات (اختياري)</Label>
                                         <Input value={payForm.notes} onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })} />
                                     </div>
-                                    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setPayDialogOpen(false)}>إلغاء</Button><Button type="submit">تأكيد الدفع</Button></div>
+                                    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => setPayDialogOpen(false)}>إلغاء</Button><Button type="submit">إرسال للخزينة</Button></div>
                                 </form>
                             </DialogContent>
                         </Dialog>
@@ -233,6 +229,7 @@ export default function StudentDetail() {
                 <TabsList>
                     <TabsTrigger value="payments">سجل المدفوعات</TabsTrigger>
                     <TabsTrigger value="installments">خطط الأقساط</TabsTrigger>
+                    <TabsTrigger value="history">السجل المالي للسنوات</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="payments">
@@ -317,6 +314,61 @@ export default function StudentDetail() {
                                 </div>
                             </div>
                         ))
+                    )}
+                </TabsContent>
+
+                <TabsContent value="history">
+                    <div className="rounded-lg border bg-card overflow-hidden">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b bg-muted/40">
+                                    <th className="text-right p-3 font-semibold">السنة الدراسية</th>
+                                    <th className="text-right p-3 font-semibold">المرحلة / الصف</th>
+                                    <th className="text-right p-3 font-semibold">إجمالي الرسوم</th>
+                                    <th className="text-right p-3 font-semibold">المدفوع</th>
+                                    <th className="text-right p-3 font-semibold">المتبقي</th>
+                                    <th className="text-right p-3 font-semibold">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {student.yearlyFinance?.map((yf) => {
+                                    const yfRemaining = yf.totalFees - yf.paidAmount;
+                                    return (
+                                        <tr key={yf.id} className="border-b last:border-0 hover:bg-muted/20">
+                                            <td className="p-3 font-medium tabular-nums">{yf.academicYear}</td>
+                                            <td className="p-3">{stageLabels[yf.stage]} - {yf.grade}</td>
+                                            <td className="p-3 tabular-nums font-bold">{formatCurrency(yf.totalFees)}</td>
+                                            <td className="p-3 tabular-nums text-emerald-600">{formatCurrency(yf.paidAmount)}</td>
+                                            <td className={`p-3 tabular-nums font-bold ${yfRemaining > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                                {formatCurrency(yfRemaining)}
+                                            </td>
+                                            <td className="p-3">
+                                                {yfRemaining <= 0 ? (
+                                                    <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none">مسدد بالكامل</Badge>
+                                                ) : (
+                                                    <Badge variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-100 border-none">متأخرات</Badge>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                        {(!student.yearlyFinance || student.yearlyFinance.length === 0) && (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <Clock className="size-10 mx-auto mb-3 opacity-30" />
+                                <p>لا يوجد سجل مالي سابق متاح لهذا الطالب</p>
+                            </div>
+                        )}
+                    </div>
+                    {student.yearlyFinance && student.yearlyFinance.some(yf => (yf.totalFees - yf.paidAmount) > 0 && yf.academicYear !== student.academicYear) && (
+                        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+                            <AlertCircle className="size-5 text-amber-600 mt-0.5" />
+                            <div>
+                                <p className="text-sm font-bold text-amber-800">تنبيه المديونية السابقة</p>
+                                <p className="text-xs text-amber-700 mt-1">يوجد مديونية مستحقة من سنوات سابقة. سيتم توجيه أي مدفوعات جديدة تلقائياً لتغطية الديون القديمة أولاً.</p>
+                            </div>
+                        </div>
                     )}
                 </TabsContent>
             </Tabs>

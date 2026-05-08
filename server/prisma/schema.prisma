@@ -11,20 +11,62 @@ model Student {
   id              String    @id @default(uuid())
   nationalId      String    @unique
   name            String
+  photoUrl        String?
   stage           String
   grade           String
-  className       String
+  track           String    @default("local") // local, international
+  academicYear    String    @default("2024-2025")
+  className       String?
   guardianName    String
   guardianPhone   String
   address         String?
-  enrollmentDate  String
-  status          String    @default("active")
+  enrollmentDate  String?
+  status          String    @default("applied") // applied, under_testing, fee_setup, pending_approval, admitted
+  hasSiblings     Boolean   @default(false)
+  testResult      String?   // pass, fail
+  tuitionFees     Float     @default(0)
+  tuitionMandatory Boolean   @default(true)
+  booksFees       Float     @default(0)
+  booksMandatory   Boolean   @default(true)
+  uniformFees     Float     @default(0)
+  uniformMandatory Boolean   @default(true)
+  busFees         Float     @default(0)
+  otherFees       Float     @default(0)
   totalFees       Float     @default(0)
   paidAmount      Float     @default(0)
+  pendingPaymentAmount Float?
+  pendingPaymentType   String?
+  paymentRequestStatus String?
+  discountAmount  Float     @default(0)
+  discountApprovedBy String?
   busRouteId      String?
+  documents       Json?     // stores URLs for birth certificate, ID, etc.
+  additionalFees  Json?     // [{ name: string, amount: number, isMandatory: boolean }]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   payments        Payment[]
+  yearlyFinance   StudentYearlyFinance[]
+}
+
+model StageFee {
+  id              String   @id @default(uuid())
+  stage           String
+  grade           String
+  track           String   @default("local") // local, international
+  academicYear    String
+  tuitionFees     Float
+  tuitionMandatory Boolean   @default(true)
+  booksFees       Float
+  booksMandatory   Boolean   @default(true)
+  uniformFees     Float
+  uniformMandatory Boolean   @default(true)
+  applicationFees Float
+  applicationMandatory Boolean @default(true)
+  additionalFees  Json?     // [{ name: string, amount: number, isMandatory: boolean }]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([stage, grade, track, academicYear])
 }
 
 model Payment {
@@ -37,8 +79,27 @@ model Payment {
   date          String
   receiptNumber String   @unique
   collectedBy   String
-  student       Student  @relation(fields: [studentId], references: [id])
+  academicYear  String?
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
+}
+
+model StudentYearlyFinance {
+  id              String   @id @default(uuid())
+  studentId       String
+  academicYear    String
+  grade           String
+  stage           String
+  tuitionFees     Float    @default(0)
+  booksFees       Float    @default(0)
+  uniformFees     Float    @default(0)
+  busFees         Float    @default(0)
+  otherFees       Float    @default(0)
+  totalFees       Float    @default(0)
+  paidAmount      Float    @default(0)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, academicYear])
 }
 
 model InventoryItem {
@@ -74,5 +135,6 @@ model User {
   role      String
   avatar    String?
   active    Boolean  @default(true)
+  discountLimitPercent Float @default(0)
   createdAt DateTime @default(now())
 }

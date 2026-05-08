@@ -176,7 +176,7 @@ export const mockInventoryTransactions: InventoryTransaction[] = [
 export const mockBusRoutes: BusRoute[] = [
   { id: 'r1', name: 'خط كوم حمادة', driverName: 'حسن محمد عبدالله', driverPhone: '01551234567', busNumber: 'ق م ن 1234', capacity: 40, monthlyFee: 500, annualFee: 5000, stops: ['كوم حمادة المدينة', 'النجيلة', 'شبراخيت', 'صفط العنب', 'كفر مجاهد'] },
   { id: 'r2', name: 'خط مركز بدر', driverName: 'محمود سعيد أحمد', driverPhone: '01552345678', busNumber: 'ق م ن 5678', capacity: 35, monthlyFee: 450, annualFee: 4500, stops: ['واقد', 'البريجات', 'دمشلي', 'علقام', 'الطيرية'] 
-  }, },
+  },
   { id: 'r3', name: 'خط دمنهور', driverName: 'أحمد فتحي رمضان', driverPhone: '01553456789', busNumber: 'ق م ن 9012', capacity: 45, monthlyFee: 600, annualFee: 6000, stops:['مدينة بدر', 'النجاح', 'بغداد', 'عين جالوت', 'صلاح الدين'] },
   { id: 'r4', name: 'خط الدلنجات', driverName: 'عبدالرحمن خالد', driverPhone: '01554567890', busNumber: 'ق م ن 3456', capacity: 40, monthlyFee: 550, annualFee: 5500, stops: ['أحمد عرابي', 'المنطقة الصناعية', 'عمر مكرم', 'عبدالسلام عارف', 'أم صابر'] },
   { id: 'r5', name: 'خط الاسكندرية', driverName: 'سامي إبراهيم نور', driverPhone: '01555678901', busNumber: 'ق م ن 7890', capacity: 30, monthlyFee: 400, annualFee: 4000, stops: ['خنيزة', 'منشأة بولين', 'كفر زيادة', 'الحدين'] },

@@ -7,27 +7,80 @@ export interface User {
   password: string;
   role: UserRole;
   active: boolean;
+  discountLimitPercent: number;
 }
 
-export type StudentStatus = 'active' | 'inactive' | 'graduated' | 'transferred';
+export type StudentStatus = 'applied' | 'under_testing' | 'fee_setup' | 'pending_approval' | 'admitted' | 'inactive' | 'graduated' | 'transferred';
 export type Stage = 'kg' | 'primary' | 'preparatory' | 'secondary';
+export type Track = 'local' | 'international';
+
+export interface AdditionalFee {
+  name: string;
+  amount: number;
+  isMandatory: boolean;
+}
+
+export interface StudentYearlyFinance {
+  id: string;
+  studentId: string;
+  academicYear: string;
+  grade: string;
+  stage: Stage;
+  tuitionFees: number;
+  booksFees: number;
+  uniformFees: number;
+  busFees: number;
+  otherFees: number;
+  totalFees: number;
+  paidAmount: number;
+}
 
 export interface Student {
   id: string;
   nationalId: string;
   name: string;
+  photoUrl?: string;
   stage: Stage;
   grade: string;
-  className: string;
+  track: Track;
+  academicYear: string;
+  className?: string;
   guardianName: string;
   guardianPhone: string;
-  guardianPhone2?: string;
-  address: string;
-  enrollmentDate: string;
+  address?: string;
+  enrollmentDate?: string;
   status: StudentStatus;
-  busRouteId?: string;
+  hasSiblings: boolean;
+  testResult?: 'pass' | 'fail';
+  tuitionFees: number;
+  booksFees: number;
+  uniformFees: number;
+  busFees: number;
+  otherFees: number;
   totalFees: number;
   paidAmount: number;
+  discountAmount: number;
+  discountApprovedBy?: string;
+  busRouteId?: string;
+  documents?: Record<string, string>;
+  additionalFees?: AdditionalFee[];
+  pendingPaymentAmount?: number;
+  pendingPaymentType?: string;
+  paymentRequestStatus?: string;
+  yearlyFinance?: StudentYearlyFinance[];
+}
+
+export interface StageFee {
+  id: string;
+  stage: Stage;
+  grade: string;
+  track: Track;
+  academicYear: string;
+  tuitionFees: number;
+  booksFees: number;
+  uniformFees: number;
+  applicationFees: number;
+  additionalFees?: AdditionalFee[];
 }
 
 export type PaymentType = 'tuition' | 'books' | 'uniform' | 'bus' | 'activities' | 'other';

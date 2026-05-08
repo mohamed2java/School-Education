@@ -44,12 +44,35 @@ export const useStudentsStore = create<StudentsState>()(
           console.error('Add student error:', error);
         }
       },
-      updateStudent: (id, data) => set((state) => ({
-        students: state.students.map((s) => s.id === id ? { ...s, ...data } : s),
-      })),
-      deleteStudent: (id) => set((state) => ({
-        students: state.students.filter((s) => s.id !== id),
-      })),
+      updateStudent: async (id, data) => {
+        try {
+          const response = await fetch(`http://127.0.0.1:4000/api/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          if (!response.ok) throw new Error('Failed to update student on server');
+          const updatedStudent = await response.json();
+          set((state) => ({
+            students: state.students.map((s) => s.id === id ? updatedStudent : s),
+          }));
+        } catch (error) {
+          console.error('Update student error:', error);
+          throw error; // Rethrow to let the UI know it failed
+        }
+      },
+      deleteStudent: async (id) => {
+        try {
+          await fetch(`http://127.0.0.1:4000/api/students/${id}`, {
+            method: 'DELETE',
+          });
+          set((state) => ({
+            students: state.students.filter((s) => s.id !== id),
+          }));
+        } catch (error) {
+          console.error('Delete student error:', error);
+        }
+      },
       getStudent: (id) => get().students.find((s) => s.id === id),
       addPaymentToStudent: (id, amount) => set((state) => ({
         students: state.students.map((s) =>

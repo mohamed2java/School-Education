@@ -13,7 +13,11 @@ const Inventory = lazy(() => import('@/pages/Inventory'));
 const BusManagement = lazy(() => import('@/pages/BusManagement'));
 const Reports = lazy(() => import('@/pages/Reports'));
 const Users = lazy(() => import('@/pages/Users'));
+const Admission = lazy(() => import('@/pages/Admission'));
+const StageFeeManagement = lazy(() => import('@/pages/StageFeeManagement'));
 const Profile = lazy(() => import('@/pages/Profile'));
+const DiscountApprovals = lazy(() => import('@/pages/DiscountApprovals'));
+const DiscountSettings = lazy(() => import('@/pages/DiscountSettings'));
 
 function LoadingFallback() {
   return (
@@ -48,6 +52,10 @@ export default function App() {
             <Route path="/bus" element={<BusManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/admission" element={<Admission />} />
+            <Route path="/stage-fees" element={<StageFeeManagement />} />
+            <Route path="/discount-approvals" element={<DiscountApprovals />} />
+            <Route path="/discount-settings" element={<DiscountSettings />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
